@@ -7,15 +7,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
-/**
- * Created by DOTIN SCHOOL 3 on 5/13/2015.
- */
 public class JsonParser {
     private final static String filePath="src\\main\\resources\\core.json";
-    private ArrayList <Deposit> depositArrayList;
+    private HashMap<String,Deposit> deposits;
     private int port;
     private String outLog;
 
@@ -26,7 +23,7 @@ public class JsonParser {
 
     public void pars(){
         try {
-            depositArrayList=new ArrayList<Deposit>();
+            deposits=new HashMap<String, Deposit>();
             FileReader fileReader = new FileReader(filePath);
             JSONParser jsonParser=new JSONParser();
             JSONObject jsonObject=(JSONObject) jsonParser.parse(fileReader);
@@ -41,7 +38,7 @@ public class JsonParser {
                 depositInitBalance=new BigDecimal(jsonDepositObject.get("initialBalance").toString());
                 depositUpperBound=new BigDecimal(jsonDepositObject.get("upperBound").toString());
                 //System.out.println(depositCustomer+","+depositId+","+depositInitBalance+","+depositUpperBound);
-                depositArrayList.add(new Deposit(depositCustomer
+                deposits.put(depositId, new Deposit(depositCustomer
                                                     ,depositId
                                                     ,depositInitBalance
                                                     ,depositUpperBound));
@@ -54,8 +51,8 @@ public class JsonParser {
             e.printStackTrace();
         }
     }
-    public ArrayList<Deposit> getDepositArrayList(){
-        return depositArrayList;
+    public HashMap <String,Deposit> getDepositArrayList(){
+        return deposits;
     }
     public int getPort(){
         return port;

@@ -1,8 +1,8 @@
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-/**
- * Created by DOTIN SCHOOL 3 on 5/13/2015.
- */
 public class BankServerHandler extends Thread {
     private Socket socket;
 
@@ -12,6 +12,34 @@ public class BankServerHandler extends Thread {
     }
 
     public void run(){
-
+        try{
+            ObjectOutputStream out=new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream in=new ObjectInputStream(socket.getInputStream());
+            while(true){
+                Transaction receivedTransaction=(Transaction) in.readObject();
+                receivedTransaction.setSuccess(false);
+                Deposit deposit=BankServer.server.getDepositById(receivedTransaction.getDepositId());
+                if(deposit!=null && receivedTransaction.getType()=="deposit"){
+                    synchronized(deposit){
+                        if(deposit.validateDepositOperand(receivedTransaction.getAmount())){
+                            receivedTransaction.setDepositNewBalance(deposit.deposit(receivedTransaction.getAmount()));
+                            receivedTransaction.setSuccess(true);
+                        }
+                    }
+                }else if(deposit!=null && receivedTransaction.getType()=="withdraw"){
+                    synchronized(deposit){
+                        if(deposit.validateWithdrawOperand(receivedTransaction.getAmount())){
+                            receivedTransaction.setDepositNewBalance(deposit.withdraw(receivedTransaction.getAmount()));
+                            receivedTransaction.setSuccess(true);
+                        }
+                    }
+                }
+                out.writeObject(receivedTransaction);
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }catch(ClassNotFoundException e){
+            e.printStackTrace();
+        }
     }
 }

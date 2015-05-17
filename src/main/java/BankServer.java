@@ -1,26 +1,36 @@
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.ArrayList;
+import java.util.HashMap;
 
 
-public class BankServer {
-    private ArrayList <Deposit> depositArrayList;
+public class BankServer implements Runnable{
+    public static BankServer server=new BankServer();
+    private HashMap<String, Deposit> depositHashMap;
     private int port;
     private String logFileName;
     private ServerSocket serverSocket;
-    public BankServer(){
+
+    private BankServer(){
         JsonParser jsonParser= new JsonParser();
         jsonParser.pars();
         port=jsonParser.getPort();
         logFileName=jsonParser.getOutLog();
-        depositArrayList=jsonParser.getDepositArrayList();
+        depositHashMap=jsonParser.getDepositArrayList();
         try {
             serverSocket = new ServerSocket(port);
         }catch (IOException e){
             e.printStackTrace();
         }
     }
-    public void startServicing(){
+
+    Deposit getDepositById(String id){
+        if(depositHashMap.containsKey(id)) {
+            return depositHashMap.get(id);
+        }else
+            return null;
+    }
+
+    public void run(){
         while(true){
             try {
                 new BankServerHandler(serverSocket.accept());
@@ -31,6 +41,6 @@ public class BankServer {
     }
 
     public static void main(String args[]){
-        System.out.println(new BankServer().depositArrayList);
+        BankServer.server.run();
     }
 }
