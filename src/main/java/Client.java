@@ -16,6 +16,8 @@ import java.math.BigDecimal;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
 
 public class Client extends Thread {
     private static int threadNumber=0;
@@ -41,9 +43,15 @@ public class Client extends Thread {
 
     public void run(){
         try {
+            FileHandler fileHandler=new FileHandler("src\\main\\resources\\"+outLogPath);
+            Logger logger=Logger.getLogger(this.getName());
+            logger.addHandler(fileHandler);
             socket=new Socket(serverIp,serverPort);
+            logger.info("Connected to Server");
             ObjectOutputStream out=new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream in=new ObjectInputStream(socket.getInputStream());
+
+            out.writeUTF(terminalId);
 
             Iterator <Transaction> iterator= transactionArrayList.iterator();
 
@@ -54,8 +62,20 @@ public class Client extends Thread {
             Element transactionsElement = doc.createElement("transactions");
             doc.appendChild(transactionsElement);
             while(iterator.hasNext()){
-                out.writeObject(iterator.next());
+                Transaction requestTransaction=iterator.next();
+
+                out.writeObject(requestTransaction);
+                logger.info("Sends request for transaction "+ requestTransaction.getId());
+
                 Transaction responseTransaction=(Transaction) in.readObject();
+                logger.info("Received answer for transaction "+ responseTransaction.getId());
+
+                if(responseTransaction.isSuccess()){
+                    logger.info("Transaction "+ responseTransaction.getId()+ " is done successfully and new balance is "+ responseTransaction.getDepositNewBalance());
+                }else{
+                    logger.info("Transaction "+ responseTransaction.getId() + " fails");
+                    logger.info(responseTransaction.getFailMessage());
+                }
 
                 Element transactionElement=doc.createElement("transaction");
 
@@ -109,7 +129,7 @@ public class Client extends Thread {
     public class SaxParser {
 
         class SaxHandler extends DefaultHandler {
-            Transaction currentTransaction=new Transaction();
+
             public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
                 if ("terminal".equals(qName)) {
                     terminalId=attributes.getValue("id");
@@ -117,9 +137,10 @@ public class Client extends Thread {
                 } else if ("server".equals(qName)) {
                     serverIp=attributes.getValue("ip");
                     serverPort=Integer.parseInt(attributes.getValue("port"));
-                } else if ("outLoge".equals(qName)) {
+                } else if ("outLog".equals(qName)) {
                     outLogPath=attributes.getValue("path");
                 } else if ("transaction".equals(qName)) {
+                    Transaction currentTransaction=new Transaction();
                     currentTransaction.setId(attributes.getValue("id"));
                     currentTransaction.setType(attributes.getValue("type"));
                     currentTransaction.setAmount(new BigDecimal(attributes.getValue("amount")));
@@ -150,7 +171,10 @@ public class Client extends Thread {
     }
 
     public static void main(String args[]){
-        new Client();
+
+        for(int i=0;i<3;i++){
+            new Client();
+        }
     }
 
 }

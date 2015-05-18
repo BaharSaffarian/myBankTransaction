@@ -9,6 +9,11 @@ public class Transaction implements Serializable {
     private String depositId;
     private boolean success;
     private BigDecimal depositNewBalance;
+    private String failMessage;
+
+    public void setFailMessage(String failMessage) {
+        this.failMessage = failMessage;
+    }
 
     public void setSuccess(boolean success) {
         this.success = success;
@@ -54,7 +59,18 @@ public class Transaction implements Serializable {
         return success;
     }
 
+    public String getFailMessage() {
+        return failMessage;
+    }
+
     public BigDecimal getDepositNewBalance() {
         return depositNewBalance;
+    }
+
+    public String toString(){
+        String st=("Transaction "+ id+ " , type: "+type+" , amount: "+ amount+" , deposit: " + depositId);
+        if(depositNewBalance!=null && success)
+            st+=" succeed, new Balance: "+ depositNewBalance;
+        return st;
     }
 }

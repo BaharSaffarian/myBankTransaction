@@ -14,20 +14,23 @@ public class Deposit {
     }
 
     boolean validateDepositOperand(BigDecimal value){
-        BigDecimal temp=new BigDecimal(initialBalance.toString());
-        return (temp.add(value).compareTo(upperBound)<=0 ? true : false);
+        return (initialBalance.add(value).compareTo(upperBound)<=0 ? true : false);
     }
 
     boolean validateWithdrawOperand(BigDecimal value){
-        BigDecimal temp=new BigDecimal(initialBalance.toString());
-        return (temp.subtract(value).compareTo(new BigDecimal(0))>=0 ? true :false);
+
+        return (initialBalance.subtract(value).compareTo(new BigDecimal(0))>=0 ? true :false);
     }
 
     BigDecimal deposit(BigDecimal value){
-        return initialBalance.add(value);
+        initialBalance=initialBalance.add(value);
+        System.out.println(initialBalance);
+        return initialBalance;
     }
 
     BigDecimal withdraw(BigDecimal value){
-        return initialBalance.subtract(value);
+        initialBalance=initialBalance.subtract(value);
+        System.out.println(initialBalance);
+        return initialBalance;
     }
 }

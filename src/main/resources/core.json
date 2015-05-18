@@ -11,6 +11,11 @@
             "id": "35527439",
             "initialBalance": "0",
             "upperBound":"0"
+        },{
+            "customer":"Sara Akbari",
+            "id": "123",
+            "initialBalance": "100",
+            "upperBound":"10000"
         }
     ],
     "outLog": "server.out"
