@@ -19,8 +19,10 @@ import java.util.Iterator;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
+import static javax.xml.transform.OutputKeys.INDENT;
+
 public class Client extends Thread {
-    private static int threadNumber=0;
+    private static int threadNumber = 0;
     InputStream xmlInput;
     private String terminalId;
     private String terminalType;
@@ -28,99 +30,102 @@ public class Client extends Thread {
     private int serverPort;
     private String outLogPath;
     private Socket socket;
-    ArrayList <Transaction> transactionArrayList= new ArrayList<Transaction>();
+    ArrayList<Transaction> transactionArrayList = new ArrayList<Transaction>();
+
     public Client() {
-        super(""+ ++threadNumber);
+        super("" + ++threadNumber);
         try {
-            xmlInput=new FileInputStream("src\\main\\resources\\terminal"+this.getName()+".xml");
-        }catch (IOException e){
+            xmlInput = new FileInputStream("src\\main\\resources\\terminal" + this.getName() + ".xml");
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        SaxParser saxParser=new SaxParser();
+        SaxParser saxParser = new SaxParser();
         saxParser.extractObjects();
         start();
     }
 
-    public void run(){
+    public void run() {
         try {
-            FileHandler fileHandler=new FileHandler("src\\main\\resources\\"+outLogPath);
-            Logger logger=Logger.getLogger(this.getName());
+            FileHandler fileHandler = new FileHandler("src\\main\\resources\\" + outLogPath);
+            Logger logger = Logger.getLogger(this.getName());
             logger.addHandler(fileHandler);
-            socket=new Socket(serverIp,serverPort);
+            socket = new Socket(serverIp, serverPort);
             logger.info("Connected to Server");
-            ObjectOutputStream out=new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream in=new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 
             out.writeUTF(terminalId);
 
-            Iterator <Transaction> iterator= transactionArrayList.iterator();
+            Iterator<Transaction> iterator = transactionArrayList.iterator();
 
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder =dbFactory.newDocumentBuilder();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.newDocument();
 
             Element transactionsElement = doc.createElement("transactions");
             doc.appendChild(transactionsElement);
-            while(iterator.hasNext()){
-                Transaction requestTransaction=iterator.next();
+            while (iterator.hasNext()) {
+                Transaction requestTransaction = iterator.next();
 
                 out.writeObject(requestTransaction);
-                logger.info("Sends request for transaction "+ requestTransaction.getId());
+                logger.info("Sends request for transaction " + requestTransaction.getId());
 
-                Transaction responseTransaction=(Transaction) in.readObject();
-                logger.info("Received answer for transaction "+ responseTransaction.getId());
+                Transaction responseTransaction = (Transaction) in.readObject();
+                logger.info("Received answer for transaction " + responseTransaction.getId());
 
-                if(responseTransaction.isSuccess()){
-                    logger.info("Transaction "+ responseTransaction.getId()+ " is done successfully and new balance is "+ responseTransaction.getDepositNewBalance());
-                }else{
-                    logger.info("Transaction "+ responseTransaction.getId() + " fails");
+                if (responseTransaction.isSuccess()) {
+                    logger.info("Transaction " + responseTransaction.getId() + " is done successfully and new balance is " + responseTransaction.getDepositNewBalance());
+                } else {
+                    logger.info("Transaction " + responseTransaction.getId() + " fails");
                     logger.info(responseTransaction.getFailMessage());
                 }
 
-                Element transactionElement=doc.createElement("transaction");
+                Element transactionElement = doc.createElement("transaction");
 
-                Attr idAttr=doc.createAttribute("id");
+                Attr idAttr = doc.createAttribute("id");
                 idAttr.setValue(responseTransaction.getId());
                 transactionElement.setAttributeNode(idAttr);
 
-                Attr typeAttr=doc.createAttribute("type");
+                Attr typeAttr = doc.createAttribute("type");
                 typeAttr.setValue(responseTransaction.getType());
                 transactionElement.setAttributeNode(typeAttr);
 
-                Attr amountAttr=doc.createAttribute("amount");
+                Attr amountAttr = doc.createAttribute("amount");
                 amountAttr.setValue(responseTransaction.getAmount().toString());
                 transactionElement.setAttributeNode(amountAttr);
 
-                Attr depositAttr=doc.createAttribute("deposit");
+                Attr depositAttr = doc.createAttribute("deposit");
                 depositAttr.setValue(responseTransaction.getDepositId());
                 transactionElement.setAttributeNode(depositAttr);
 
-                Attr successAttr=doc.createAttribute("success");
-                successAttr.setValue((responseTransaction.isSuccess()==true ? "succeed" :"fail"));
+                Attr successAttr = doc.createAttribute("success");
+                successAttr.setValue(responseTransaction.isSuccess() ? "succeed" : "fail");
                 transactionElement.setAttributeNode(successAttr);
 
-                Attr balanceAttr=doc.createAttribute("newBalance");
-                balanceAttr.setValue(responseTransaction.getDepositNewBalance()!=null ?
-                                        responseTransaction.getDepositNewBalance().toString() :
-                                        "");
-                transactionElement.setAttributeNode(balanceAttr);
+                if (responseTransaction.isSuccess()) {
+                    Attr balanceAttr = doc.createAttribute("newBalance");
+                    balanceAttr.setValue(
+                            responseTransaction.getDepositNewBalance().toString());
+                    transactionElement.setAttributeNode(balanceAttr);
+                }
 
                 transactionsElement.appendChild(transactionElement);
             }
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(INDENT, "yes");
             DOMSource source = new DOMSource(doc);
-            StreamResult result = new StreamResult(new File("src\\main\\resources\\response.xml"));
+            StreamResult result = new StreamResult(new File("src\\main\\resources\\response" + terminalId + ".xml"));
             transformer.transform(source, result);
 
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
-        }catch (ClassNotFoundException e){
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
-        }catch (ParserConfigurationException e){
+        } catch (ParserConfigurationException e) {
             e.printStackTrace();
-        }catch (TransformerException e){
+        } catch (TransformerException e) {
             e.printStackTrace();
         }
 
@@ -132,15 +137,15 @@ public class Client extends Thread {
 
             public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
                 if ("terminal".equals(qName)) {
-                    terminalId=attributes.getValue("id");
-                    terminalType=attributes.getValue("type");
+                    terminalId = attributes.getValue("id");
+                    terminalType = attributes.getValue("type");
                 } else if ("server".equals(qName)) {
-                    serverIp=attributes.getValue("ip");
-                    serverPort=Integer.parseInt(attributes.getValue("port"));
+                    serverIp = attributes.getValue("ip");
+                    serverPort = Integer.parseInt(attributes.getValue("port"));
                 } else if ("outLog".equals(qName)) {
-                    outLogPath=attributes.getValue("path");
+                    outLogPath = attributes.getValue("path");
                 } else if ("transaction".equals(qName)) {
-                    Transaction currentTransaction=new Transaction();
+                    Transaction currentTransaction = new Transaction();
                     currentTransaction.setId(attributes.getValue("id"));
                     currentTransaction.setType(attributes.getValue("type"));
                     currentTransaction.setAmount(new BigDecimal(attributes.getValue("amount")));
@@ -162,7 +167,7 @@ public class Client extends Thread {
                 e.printStackTrace();
             } catch (SAXException e) {
                 e.printStackTrace();
-            }catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -170,9 +175,9 @@ public class Client extends Thread {
 
     }
 
-    public static void main(String args[]){
+    public static void main(String args[]) {
 
-        for(int i=0;i<3;i++){
+        for (int i = 0; i < 3; i++) {
             new Client();
         }
     }

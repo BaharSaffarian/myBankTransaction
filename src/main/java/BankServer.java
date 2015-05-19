@@ -1,38 +1,36 @@
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
 
-public class BankServer implements Runnable{
-    public static BankServer server=new BankServer();
+public class BankServer implements Runnable {
+    public static BankServer server = new BankServer();
     private HashMap<String, Deposit> depositHashMap;
-    private int port;
-    FileHandler fileHandler;
-    Logger logger;
+    private Logger logger;
     private ServerSocket serverSocket;
 
-    private BankServer(){
-        JsonParser jsonParser= new JsonParser();
+    private BankServer() {
+        JsonParser jsonParser = new JsonParser();
         jsonParser.pars();
-        port=jsonParser.getPort();
-        depositHashMap=jsonParser.getDepositArrayList();
+        depositHashMap = jsonParser.getDepositArrayList();
         try {
-            fileHandler=new FileHandler("src\\main\\resources\\"+jsonParser.getOutLog());
-            logger=Logger.getLogger("server");
+            FileHandler fileHandler = new FileHandler("src\\main\\resources\\" + jsonParser.getOutLog());
+            logger = Logger.getLogger("server");
             logger.addHandler(fileHandler);
-            serverSocket = new ServerSocket(port);
-        }catch (IOException e){
+            serverSocket = new ServerSocket(jsonParser.getPort());
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    Deposit getDepositById(String id){
+    Deposit getDepositById(String id) {
 
-        if(depositHashMap.containsKey(id)) {
+        if (depositHashMap.containsKey(id)) {
             return depositHashMap.get(id);
-        }else
+        } else
             return null;
     }
 
@@ -40,18 +38,21 @@ public class BankServer implements Runnable{
         return logger;
     }
 
-    public void run(){
-        System.out.println(depositHashMap);
-        while(true){
-            try {
+    public void run() {
+        try {
+            serverSocket.setSoTimeout(10000);
+            while (true) {
                 new BankServerHandler(serverSocket.accept());
-            }catch (IOException e){
-                e.printStackTrace();
             }
+        } catch (SocketTimeoutException e) {
+            logger.info("Server job terminates");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public static void main(String args[]){
+    public static void main(String args[]) {
+
         BankServer.server.run();
     }
 }

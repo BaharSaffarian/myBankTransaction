@@ -67,10 +67,10 @@ public class Transaction implements Serializable {
         return depositNewBalance;
     }
 
-    public String toString(){
-        String st=("Transaction "+ id+ " , type: "+type+" , amount: "+ amount+" , deposit: " + depositId);
-        if(depositNewBalance!=null && success)
-            st+=" succeed, new Balance: "+ depositNewBalance;
+    public String toString() {
+        String st = ("Transaction " + id + " , type: " + type + " , amount: " + amount + " , deposit: " + depositId);
+        if (depositNewBalance != null && success)
+            st += " succeed, new Balance: " + depositNewBalance;
         return st;
     }
 }
